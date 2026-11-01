@@ -1132,33 +1132,46 @@ function cadBuild(key){
  o.list=[fl,wb,fsd,ftop,hb,tb];o.glass=gb;CADB[key]=o;return o}
 function drawCad(b,a,yo){if(!b.n)return;const k=b.o.tint||1;bindB(b);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,b.tex);gl.uniform1i(U.uTex,0);
  gl.uniform3f(U.uO,0,yo,0);gl.uniform4f(U.uCol,k,k,k,a);gl.uniform3f(U.uEm,0,0,0);gl.uniform1f(U.uDim,0);gl.uniform1f(U.uSpec,b.kind==='cadglass'?.7:.04);gl.uniform1f(U.uUnlit,0);gl.drawArrays(gl.TRIANGLES,0,b.n)}
-/* ---------- illuminated "HOTEL PACIFIC SUNSET" sign on the stone column (front facade) ---------- */
-/* channel letters mounted just in front of the slab edges, so the name reads as one continuous lit sign */
+/* ---------- illuminated "HOTEL PACIFIC SUNSET" sign on the stone column (front facade) ----------
+   Navy sign board with a gold frame + bright white letters with a gold glow: high contrast against the light stone.
+   Mounted just in front of the slab edges, so it reads as one continuous sign. */
 const wyp=(i,py)=>{const r=NF-1-i,pt=r===0?BAND9:BAND[r],pb=BAND[r+1];return i*H+T+(pb-py)/(pb-pt)*(H-T)};
-const SGlo=wyp(4,600),SGhi=wyp(8,145),SGc=(SGlo+SGhi)/2,SGh=(SGhi-SGlo)*2140/1820,SGx=-HW+73/1024*W,SGw=80/1024*W,SGz=HD+.1;
-function signCanvas(glow){const c=c2(320,2140),x=c.getContext('2d'),txt='HOTEL PACIFIC SUNSET';
- x.translate(160,1070);x.rotate(-Math.PI/2);x.font='800 122px Inter,"Arial Black",Arial,sans-serif';x.textBaseline='middle';x.textAlign='left';
- const sp=17,ws=[...txt].map(ch=>x.measureText(ch).width),tot=ws.reduce((a,b)=>a+b,0)+sp*(txt.length-1);x.scale(1820/tot,1);
- const draw=()=>{let px=-tot/2;[...txt].forEach((ch,j)=>{x.fillText(ch,px,0);px+=ws[j]+sp})};
- if(glow==='dark')[[90,'rgba(6,14,28,.9)'],[40,'rgba(6,14,28,.95)']].forEach(([b,cl])=>{x.shadowColor=cl;x.shadowBlur=b;x.fillStyle=cl;draw()});
- else if(glow)[[46,'rgba(255,150,40,.85)'],[20,'rgba(255,190,80,1)'],[8,'rgba(255,220,140,1)']].forEach(([b,cl])=>{x.shadowColor=cl;x.shadowBlur=b;x.fillStyle=cl;draw()});
- else{x.lineJoin='round';x.lineWidth=7;x.strokeStyle='#f2a93b';let px=-tot/2;[...txt].forEach((ch,j)=>{x.strokeText(ch,px,0);px+=ws[j]+sp});x.fillStyle='#fff3d2';draw()}
+const SGlo=wyp(4,600),SGhi=wyp(8,145),SGc=(SGlo+SGhi)/2,SGL=(SGhi-SGlo)*1.26;    /* text length (world) */
+const SPWw=.66,SPLw=SGL+.3,SGw=SPWw+.24,SGh=SPLw+.36,SCW=384,SGk=SCW/SGw,SCH=Math.round(SGh*SGk),SGx=-HW+79/1024*W,SGz=HD+.1;
+const SPW=SPWw*SGk,SPL=SPLw*SGk,SLL=SGL*SGk;
+/* two-line lockup like the website logo: PACIFIC SUNSET (large, white) + HOTEL & RESORT (gold) */
+const SL1={t:'PACIFIC SUNSET',cap:.28,y:-.09,w:'800'},SL2={t:'HOTEL & RESORT',cap:.145,y:.185,w:'700'};
+function signLine(x,L,draw){const fs=Math.round(L.cap*SGk/.727);x.font=L.w+' '+fs+'px Inter,"Arial Black",Arial,sans-serif';
+ const ch=[...L.t],ws=ch.map(c=>x.measureText(c).width),sum=ws.reduce((a,b)=>a+b,0);let sp=(SLL-sum)/(ch.length-1),k=1;if(sp<fs*.04){sp=fs*.04;k=SLL/(sum+sp*(ch.length-1))}
+ x.save();x.translate(0,L.y*SGk);x.scale(k,1);let px=-SLL/2/k;ch.forEach((c,j)=>{draw(c,px);px+=ws[j]+sp});x.restore()}
+function signCanvas(mode){const c=c2(SCW,SCH),x=c.getContext('2d');
+ x.translate(SCW/2,SCH/2);x.rotate(-Math.PI/2);
+ if(mode==='panel'){const r=20,pw=SPW,pl=SPL;const path=()=>{x.beginPath();x.moveTo(-pl/2+r,-pw/2);x.arcTo(pl/2,-pw/2,pl/2,pw/2,r);x.arcTo(pl/2,pw/2,-pl/2,pw/2,r);x.arcTo(-pl/2,pw/2,-pl/2,-pw/2,r);x.arcTo(-pl/2,-pw/2,pl/2,-pw/2,r);x.closePath()};
+  const g=x.createLinearGradient(0,-pw/2,0,pw/2);g.addColorStop(0,'#143563');g.addColorStop(.5,'#0b2245');g.addColorStop(1,'#071833');
+  x.shadowColor='rgba(255,176,64,.9)';x.shadowBlur=36;path();x.fillStyle=g;x.fill();x.shadowBlur=0;
+  x.lineWidth=7;x.strokeStyle='#e6a83b';path();x.stroke();
+  x.save();x.scale((pl-30)/pl,(pw-30)/pw);x.lineWidth=2;x.strokeStyle='rgba(240,192,79,.55)';path();x.stroke();x.restore();
+  const ry=((SL1.y+SL1.cap/2)+(SL2.y-SL2.cap/2))/2*SGk;x.fillStyle='rgba(230,168,59,.75)';x.fillRect(-SLL/2,ry-1.5,SLL,3);   /* thin gold rule between the lines */
+  return c}
+ x.textBaseline='middle';x.textAlign='left';
+ if(mode==='glow'){[[30,'rgba(255,170,50,.95)'],[14,'rgba(255,206,110,1)'],[5,'rgba(255,236,190,1)']].forEach(([b,cl])=>{x.shadowColor=cl;x.shadowBlur=b;x.fillStyle=cl;signLine(x,SL1,(ch,px)=>x.fillText(ch,px,0))});
+  [[16,'rgba(255,180,70,.8)'],[6,'rgba(255,214,140,.9)']].forEach(([b,cl])=>{x.shadowColor=cl;x.shadowBlur=b;x.fillStyle=cl;signLine(x,SL2,(ch,px)=>x.fillText(ch,px,0))})}
+ else{x.fillStyle='#ffffff';signLine(x,SL1,(ch,px)=>x.fillText(ch,px,0));x.fillStyle='#f6c45a';signLine(x,SL2,(ch,px)=>x.fillText(ch,px,0))}
  return c}
-TX.signD=glTex(signCanvas('dark'),false);TX.signG=glTex(signCanvas(true),false);TX.signT=glTex(signCanvas(false),false);
-if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{[[TX.signD,'dark'],[TX.signG,true],[TX.signT,false]].forEach(([tx,g])=>{gl.bindTexture(gl.TEXTURE_2D,tx);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,signCanvas(g))});dirty=true});
+TX.signP=glTex(signCanvas('panel'),false);TX.signG=glTex(signCanvas('glow'),false);TX.signT=glTex(signCanvas('text'),false);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{[[TX.signG,'glow'],[TX.signT,'text']].forEach(([tx,g])=>{gl.bindTexture(gl.TEXTURE_2D,tx);gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,signCanvas(g))});dirty=true});
 const SIGN=[];   /* one slice per floor so the sign travels with its floor when levels lift apart */
 for(let i=0;i<NF;i++){const a=Math.max(i*H,SGc-SGh/2),b=Math.min((i+1)*H,SGc+SGh/2);if(b<=a)continue;
  const vv=y=>(y-(SGc-SGh/2))/SGh,xa=SGx-SGw/2,xb=SGx+SGw/2;
  const sb=new Batch(i,'sign',TX.signG);sb.quad([xa,a,SGz],[xb,a,SGz],[xb,b,SGz],[xa,b,SGz],[0,0,1],[0,vv(a),1,vv(b)]);sb.done();SIGN.push(sb)}
-function drawSign(){const br=.8+.2*Math.sin(performance.now()/740);gl.enable(gl.BLEND);gl.depthMask(false);gl.activeTexture(gl.TEXTURE0);
+function drawSign(){const br=.78+.22*Math.sin(performance.now()/700),N=gl.ONE_MINUS_SRC_ALPHA;gl.enable(gl.BLEND);gl.depthMask(false);gl.activeTexture(gl.TEXTURE0);
  for(const b of SIGN){const f=FS[b.fl],a=f.vis*Math.min(1,f.wall*1.25)*(1-f.dim*.8);if(a<.02)continue;bindB(b);
   gl.uniform3f(U.uO,0,f.off,0);gl.uniform3f(U.uEm,0,0,0);gl.uniform1f(U.uDim,0);gl.uniform1f(U.uSpec,0);gl.uniform1f(U.uUnlit,1);
-  gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
-  gl.bindTexture(gl.TEXTURE_2D,TX.signD);gl.uniform4f(U.uCol,1,1,1,a*.42);gl.drawArrays(gl.TRIANGLES,0,b.n);                                 /* soft dusk backing */
-  gl.bindTexture(gl.TEXTURE_2D,TX.signG);gl.uniform4f(U.uCol,1,1,1,a*(.55+.35*br));gl.drawArrays(gl.TRIANGLES,0,b.n);                        /* golden halo */
-  gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.bindTexture(gl.TEXTURE_2D,TX.signT);gl.uniform4f(U.uCol,1,.96,.86,a);gl.drawArrays(gl.TRIANGLES,0,b.n);   /* letters */
-  gl.blendFunc(gl.SRC_ALPHA,gl.ONE);gl.bindTexture(gl.TEXTURE_2D,TX.signG);gl.uniform4f(U.uCol,1,.8,.5,a*.22*br);gl.drawArrays(gl.TRIANGLES,0,b.n)}                                                                     /* lit-from-within */
- gl.blendFuncSeparate(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA,gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.depthMask(true)}
+  gl.blendFuncSeparate(gl.SRC_ALPHA,N,gl.ONE,N);gl.bindTexture(gl.TEXTURE_2D,TX.signP);gl.uniform4f(U.uCol,1,1,1,a);gl.drawArrays(gl.TRIANGLES,0,b.n);              /* navy board + gold frame */
+  gl.blendFunc(gl.SRC_ALPHA,gl.ONE);gl.bindTexture(gl.TEXTURE_2D,TX.signG);gl.uniform4f(U.uCol,1,1,1,a*(.65+.35*br));gl.drawArrays(gl.TRIANGLES,0,b.n);             /* gold glow */
+  gl.blendFuncSeparate(gl.SRC_ALPHA,N,gl.ONE,N);gl.bindTexture(gl.TEXTURE_2D,TX.signT);gl.uniform4f(U.uCol,1,.99,.95,a);gl.drawArrays(gl.TRIANGLES,0,b.n);         /* white letters */
+  gl.blendFunc(gl.SRC_ALPHA,gl.ONE);gl.bindTexture(gl.TEXTURE_2D,TX.signG);gl.uniform4f(U.uCol,1,.85,.6,a*.25*br);gl.drawArrays(gl.TRIANGLES,0,b.n)}                 /* bloom */
+ gl.blendFuncSeparate(gl.SRC_ALPHA,N,gl.ONE,N);gl.depthMask(true)}
 /* ---------- soft glow points on the iconic parts: crown light ring, infinity pool, glass dome, lobby entrance ---------- */
 const GLW=[];   /* [floor, x, y, z, size, r, g, b, phase] – floor -1 = site */
 {const i=NF-1,ox=HW+.85,oz=HD+.85,yc=yR+1.1,st=.78,pts=[];
